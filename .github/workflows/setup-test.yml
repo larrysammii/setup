@@ -1,0 +1,63 @@
+name: Setup Script CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  # Fast validation - runs on every push/PR
+  test:
+    runs-on: macos-latest
+    name: Validate Setup Script
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Make scripts executable
+      run: chmod +x setup-macos.sh test-setup.sh
+      
+    - name: Run test suite
+      run: ./test-setup.sh
+      timeout-minutes: 5
+
+  # Full installation test - only on main branch
+  install:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    runs-on: macos-latest
+    name: Full Installation Test
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Make script executable
+      run: chmod +x setup-macos.sh
+      
+    - name: Run setup script
+      run: ./setup-macos.sh
+      timeout-minutes: 15
+      
+    - name: Verify installations
+      run: |
+        echo "Checking installed tools..."
+        brew --version
+        git --version
+        gh --version
+        nvim --version | head -1
+        uv --version
+        ruff --version
+        node --version
+        npm --version
+        bun --version
+        
+        # GUI apps check
+        ls -la /Applications/Ghostty.app
+        ls -la /Applications/Obsidian.app
+        ls -la /Applications/Docker.app
+        
+        echo "All installations verified"
+      timeout-minutes: 2

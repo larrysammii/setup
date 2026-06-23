@@ -1,14 +1,48 @@
 #!/bin/bash
 
 # macOS Setup Script
-# Installs: homebrew, git, gh, neovim+lazyvim, uv, astral, node/npm, bun, ghostty, obsidian, docker
+# Installs: homebrew, git, gh, neovim+lazyvim, uv, astral, node/npm, bun, starship, ghostty, obsidian, docker
+# Idempotent: skip installed, upgrade outdated, install missing
 
 set -e
 
 echo "Starting macOS setup..."
 
+# --- Helper functions ---
+# Install formula if missing, upgrade if outdated, skip if up-to-date
+brew_ensure() {
+    local pkg="$1"
+    if brew list --formula 2>/dev/null | grep -q "^${pkg}$"; then
+        if brew outdated --formula 2>/dev/null | grep -q "^${pkg}$"; then
+            echo "Updating $pkg..."
+            brew upgrade "$pkg"
+        else
+            echo "$pkg already up-to-date, skipping"
+        fi
+    else
+        echo "Installing $pkg..."
+        brew install "$pkg"
+    fi
+}
+
+# Same for casks
+cask_ensure() {
+    local pkg="$1"
+    if brew list --cask 2>/dev/null | grep -q "^${pkg}$"; then
+        if brew outdated --cask 2>/dev/null | grep -q "^${pkg}$"; then
+            echo "Updating $pkg..."
+            brew upgrade --cask "$pkg"
+        else
+            echo "$pkg already up-to-date, skipping"
+        fi
+    else
+        echo "Installing $pkg..."
+        brew install --cask "$pkg"
+    fi
+}
+
 # 1. Homebrew (foundation)
-echo "Installing Homebrew..."
+echo "Checking Homebrew..."
 if ! command -v brew &> /dev/null; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     
@@ -20,20 +54,21 @@ if ! command -v brew &> /dev/null; then
         eval "$(/usr/local/bin/brew shellenv)"
     fi
 else
-    echo "Homebrew already installed"
+    echo "Homebrew already installed, updating..."
+    brew update
 fi
 
 # 2. Git
-echo "Installing Git..."
-brew install git
+echo "Checking Git..."
+brew_ensure git
 
 # 3. GitHub CLI
-echo "Installing GitHub CLI..."
-brew install gh
+echo "Checking GitHub CLI..."
+brew_ensure gh
 
 # 4. Neovim + Lazyvim
-echo "Installing Neovim..."
-brew install neovim
+echo "Checking Neovim..."
+brew_ensure neovim
 
 echo "Setting up Lazyvim..."
 LAZYVIM_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
@@ -42,31 +77,45 @@ if [ ! -d "$LAZYVIM_DIR" ]; then
     rm -rf "$LAZYVIM_DIR/.git"
     echo "Lazyvim config installed at $LAZYVIM_DIR"
 else
-    echo "Neovim config already exists at $LAZYVIM_DIR"
+    echo "Neovim config already exists at $LAZYVIM_DIR, skipping"
 fi
 
 # 5. Python tools (uv, astral)
-echo "Installing uv..."
-brew install uv
+echo "Checking uv..."
+brew_ensure uv
 
-echo "Installing ruff (astral)..."
-uv tool install ruff
+echo "Checking ruff (astral)..."
+if uv tool list 2>/dev/null | grep -q "^ruff "; then
+    echo "ruff already installed, skipping"
+else
+    echo "Installing ruff..."
+    uv tool install ruff
+fi
 
 # 6. Node.js and npm
-echo "Installing Node.js (includes npm)..."
-brew install node
+echo "Checking Node.js (includes npm)..."
+brew_ensure node
 
 # 7. Bun
-echo "Installing Bun..."
-brew install bun
+echo "Checking Bun..."
+brew_ensure bun
 
-# 8. GUI Applications via Homebrew Cask
-echo "Installing GUI applications..."
-brew install --cask ghostty
-brew install --cask obsidian
-brew install --cask docker
+# 8. Starship prompt
+echo "Checking Starship..."
+brew_ensure starship
 
-# 9. Ensure ~/.local/bin in PATH (needed by Obsidian CLI on macOS)
+echo "Ensuring Starship initializes in zsh..."
+if ! grep -q 'eval "$(starship init zsh)"' ~/.zshrc 2>/dev/null; then
+    echo 'eval "$(starship init zsh)"' >> ~/.zshrc
+fi
+
+# 9. GUI Applications via Homebrew Cask
+echo "Checking GUI applications..."
+cask_ensure ghostty
+cask_ensure obsidian
+cask_ensure docker
+
+# 10. Ensure ~/.local/bin in PATH (needed by Obsidian CLI on macOS)
 echo "Ensuring ~/.local/bin in PATH..."
 if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zprofile

@@ -204,7 +204,7 @@ rm -rf "$DRYRUN_DIR"
 # 17. Dry-run: all installed, all up-to-date -> skip everything
 echo "[17] Dry-run (all installed, up-to-date) skips"
 DRYRUN_DIR=$(mktemp -d)
-INSTALLED_PKGS="git\ngh\nneovim\nuv\nnode\nbun"
+INSTALLED_PKGS="git\ngh\nneovim\nuv\nnode\nbun\nstarship"
 INSTALLED_CASKS="ghostty\nobsidian\ndocker"
 cat > "$DRYRUN_DIR/setup-macos.sh" << WRAPPER
 #!/bin/bash
@@ -266,7 +266,7 @@ rm -rf "$DRYRUN_DIR"
 # 18. Dry-run: all installed, some outdated -> upgrade only outdated
 echo "[18] Dry-run (outdated pkg) upgrades selectively"
 DRYRUN_DIR=$(mktemp -d)
-INSTALLED_PKGS="git\ngh\nneovim\nuv\nnode\nbun"
+INSTALLED_PKGS="git\ngh\nneovim\nuv\nnode\nbun\nstarship"
 INSTALLED_CASKS="ghostty\nobsidian\ndocker"
 OUTDATED_FORMULAE="node"
 OUTDATED_CASKS="docker"

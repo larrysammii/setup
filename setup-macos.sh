@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # macOS Setup Script
-# Installs: homebrew, git, gh, neovim+lazyvim, uv, astral, node/npm, bun, starship, ghostty, obsidian, docker
+# Installs: homebrew, git, gh, neovim+lazyvim, uv, astral, node/npm, bun, starship, ghostty, obsidian, docker, zsh-patina
 # Idempotent: skip installed, upgrade outdated, install missing
 
 set -e
@@ -21,7 +21,6 @@ brew_ensure() {
     fi
   else
     echo "Installing $pkg..."
-    # If install fails (e.g. conflicting binaries), log it and move to the next step
     brew install "$pkg" || echo "Warning: Failed to install $pkg. It may already exist. Skipping..."
   fi
 }
@@ -38,7 +37,6 @@ cask_ensure() {
     fi
   else
     echo "Installing $pkg..."
-    # If cask install fails (e.g. App already in /Applications), log it and move to the next step
     brew install --cask "$pkg" || echo "Notice: $pkg setup bypassed (likely already installed manually)."
   fi
 }
@@ -133,10 +131,34 @@ else
   echo "Alias already exists, skipping"
 fi
 
+# 12. Zsh Patina (Blazingly fast syntax highlighting)
+echo "Checking Zsh Patina..."
+echo "Tapping michel-kraemer/zsh-patina..."
+brew tap michel-kraemer/zsh-patina 2>/dev/null || true
+
+# Bypass the Homebrew security trust block dynamically
+echo "Trusting michel-kraemer/zsh-patina tap..."
+brew trust michel-kraemer/zsh-patina 2>/dev/null || true
+
+brew_ensure zsh-patina
+
+echo "Ensuring Zsh Patina initializes at the end of zsh..."
+BREW_PREFIX=$(brew --prefix)
+PATINA_CMD="eval \"\$($BREW_PREFIX/bin/zsh-patina activate)\""
+
+if ! grep -q "zsh-patina activate" ~/.zshrc 2>/dev/null; then
+  echo "" >>~/.zshrc
+  echo "# Zsh Patina Syntax Highlighting" >>~/.zshrc
+  echo "$PATINA_CMD" >>~/.zshrc
+  echo "Zsh Patina added to Zsh config!"
+else
+  echo "Zsh Patina already configured, skipping"
+fi
+
 echo "Setup complete!"
 echo ""
 echo "Next steps:"
-echo "- Restart terminal for PATH changes"
+echo "- Restart terminal for PATH, alias, and syntax highlighting changes to take effect"
 echo "- Run 'gh auth login' to authenticate GitHub CLI"
 echo "- Open Docker app to complete setup"
 echo "- Open Neovim once to let Lazyvim install plugins"

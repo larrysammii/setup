@@ -1,132 +1,166 @@
-# macOS Setup Scripts
+# macOS Setup Script
 
-Automated setup scripts for fresh macOS installations. Installs development tools, CLI utilities, and GUI applications in the correct dependency order.
+Bootstrap a fresh macOS machine with a practical developer setup using Homebrew.
 
-## What Gets Installed
+This script installs or updates a curated set of CLI tools, apps, and shell enhancements, then configures a few quality-of-life defaults for Zsh and Neovim.
 
-### Core Tools
-- **Homebrew** - Package manager (foundation for everything else)
-- **Git** - Version control
-- **GitHub CLI** (`gh`) - GitHub from the command line
+## What it sets up
 
-### Development Environment
-- **Neovim** + **LazyVim** - Modern editor with batteries-included config
-- **Vim Alias** - Automatically points the `vim` command to `nvim` for a seamless transition
-- **Node.js** + **npm** - JavaScript runtime
-- **Bun** - Fast JavaScript runtime and package manager
-- **uv** - Fast Python package installer
-- **Ruff** - Astral's Python linter/formatter
+### Core tooling
+- Homebrew
+- Git
+- GitHub CLI (`gh`)
+- Neovim
+- LazyVim starter config
+- `uv`
+- `ruff`
+- Node.js and npm
+- Bun
+- Starship
+- Zsh Patina
 
-### Shell Enhancements
-- **Starship** - Minimal, ultra-fast, and customizable cross-shell prompt
-- **Zsh Patina** - Blazingly fast, sub-millisecond syntax highlighting backed by a Rust daemon
+### GUI apps
+- Ghostty
+- Obsidian
+- Docker
 
-### GUI Applications
-- **Ghostty** - Modern, GPU-accelerated terminal emulator
-- **Obsidian** - Markdown knowledge base (with CLI support)
-- **Docker Desktop** - Container platform
+### Shell tweaks
+- Adds Homebrew to PATH when needed
+- Ensures `~/.local/bin` is in PATH
+- Adds `alias vim="nvim"` to `~/.zshrc`
+- Enables Starship in `~/.zshrc`
+- Enables Zsh Patina in `~/.zshrc`
 
-## Prerequisites
+## Behavior
 
-- macOS (Intel or Apple Silicon)
+This script is designed to be **idempotent**:
+
+- If a package is missing, it installs it.
+- If a package is already installed and outdated, it upgrades it.
+- If a package is already up to date, it skips it.
+- If a config already exists, it leaves it alone.
+
+That makes it suitable for both first-time setup and repeat runs.
+
+## What the script does
+
+1. Checks for Homebrew and installs it if missing.
+2. Updates Homebrew if it is already present.
+3. Installs or upgrades CLI packages through Homebrew.
+4. Installs or upgrades GUI apps through Homebrew Cask.
+5. Clones the LazyVim starter into `~/.config/nvim` if no Neovim config exists yet.
+6. Installs `ruff` with `uv tool install ruff` if it is not already installed.
+7. Appends shell initialization snippets to `~/.zshrc` and `~/.zprofile` only when missing.
+8. Taps and trusts the `michel-kraemer/zsh-patina` Homebrew tap, then installs `zsh-patina`.
+
+## Managed paths and files
+
+The script may modify or create these locations:
+
+- `~/.zprofile`
+- `~/.zshrc`
+- `~/.config/nvim`
+
+## Requirements
+
+- macOS
 - Internet connection
-- Admin privileges (for some installations)
+- Permission to install software and modify shell config files
 
 ## Usage
 
-Code output
-
-File generated successfully: README.md
+Save the script and make it executable:
 
 ```bash
-# Make executable
 chmod +x setup-macos.sh
+```
 
-# Run setup
+Run it:
+
+```bash
 ./setup-macos.sh
+```
 
-The script is fully idempotent and crash-proof. It skips up-to-date packages, upgrades outdated ones, and gracefully bypasses manual installations (e.g., if you already dragged Docker or Obsidian into your /Applications folder, the script won't panic or stop).
+If you prefer:
 
-Post-Installation
+```bash
+bash setup-macos.sh
+```
 
-After the script completes:
+## Notes
 
-    Restart terminal - Required for PATH updates, the vim alias, Starship, and Zsh Patina to initialize.
+### Homebrew path handling
+On Apple Silicon Macs, the script initializes Homebrew from:
 
-    Authenticate GitHub CLI:
-    Bash
+```bash
+/opt/homebrew/bin/brew
+```
 
-    gh auth login
+On Intel Macs, it uses:
 
-    Open Docker - Launch once to complete system setup.
+```bash
+/usr/local/bin/brew
+```
 
-    Open Neovim - Launch once to let LazyVim install plugins automatically.
+### LazyVim setup
+The script clones the LazyVim starter repo into:
 
-    Enable Obsidian CLI:
+```bash
+~/.config/nvim
+```
 
-        Open Obsidian → Settings → General
+If that directory already exists, it skips installation to avoid overwriting an existing Neovim configuration.
 
-        Enable "Command line interface"
+### Ruff installation
+`ruff` is installed using `uv tool install ruff` instead of Homebrew.
 
-        Follow the on-screen prompt to register the CLI (requires admin password)
+### Obsidian CLI
+The script ensures `~/.local/bin` is available in PATH because the Obsidian CLI setup depends on it.
 
-        Restart terminal
+## After running
 
-Testing
+The script finishes by printing a few manual next steps:
 
-Run the test suite to verify the script configuration without actually installing anything on your machine:
-Bash
+- Restart the terminal so PATH, aliases, and shell enhancements reload.
+- Run `gh auth login` to authenticate GitHub CLI.
+- Open Docker once to complete Docker Desktop setup.
+- Open Neovim once so LazyVim can install its plugins.
+- In Obsidian, enable the command-line interface in Settings, then follow the prompt to register it.
 
-# Make test executable
-chmod +x test-setup.sh
+## Example install list
 
-# Run tests
-./test-setup.sh
+### CLI
+- `git`
+- `gh`
+- `neovim`
+- `uv`
+- `node`
+- `bun`
+- `starship`
+- `zsh-patina`
 
-Tests verify:
+### Apps
+- `ghostty`
+- `obsidian`
+- `docker`
 
-    Script syntax and error-handling flags (set -e)
+## Safety and caveats
 
-    Live package availability against Homebrew's remote formula/cask registries
+- The script appends to shell config files rather than replacing them.
+- It intentionally skips existing Neovim config instead of overwriting it.
+- It uses `brew trust` for the `michel-kraemer/zsh-patina` tap.
+- Some installs may still require user interaction depending on local system state or app permissions.
 
-    Remote repository URL integrity
+## Customization ideas
 
-    Architecture detection logic (Intel vs Apple Silicon)
+You can easily extend this script by adding more packages to the Homebrew sections, for example:
 
-    100% Isolated Dry-Runs: Uses strict inline mocking to completely isolate the test from your real environment, bypassing macOS environment subshell restrictions to ensure zero live packages leak through.
+- `fzf`
+- `ripgrep`
+- `bat`
+- `tmux`
+- `pnpm`
 
-Architecture Support
+## License
 
-Scripts automatically detect your system architecture and map things cleanly:
-
-    Apple Silicon (arm64): /opt/homebrew paths
-
-    Intel (x86_64): /usr/local paths
-
-What the Scripts Don't Do
-
-    Install heavy framework managers (like Oh My Zsh) or custom shell plugins outside of Starship and Patina
-
-    Set up SSH keys or Git config credentials (user.name / user.email)
-
-    Install language-specific version managers (like nvm or pyenv)
-
-    Configure editor settings beyond LazyVim defaults
-
-    Pull Docker containers or images
-
-Customization
-
-Edit setup-macos.sh to:
-
-    Add/remove packages
-
-    Change installation order
-
-    Modify PATH setup
-
-    Add custom configuration steps
-
-License
-
-MIT
+Use, modify, and adapt freely for personal machine setup.
